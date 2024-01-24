@@ -97,7 +97,7 @@ def stream_line(r, mass=0.5 * u.Msun, r0=1e4 * u.au, theta0=30 * u.deg,
     theta[0] = rad_theta0
     # Initial guess at largest radius is theta0 +- initguess towards the midplane
     deltar = np.amin(np.abs(np.roll(r,1) - r))
-    print(deltar)
+    print('deltar: ', deltar)
     # we use a constant of 6e-5 for an epsilon of 0.01 km/s
     # this result will be in radians
     tol = (6.e-5 * deltar * omega / (v_r0+ 0.1 * u.km/u.s)).decompose().value
