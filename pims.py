@@ -43,7 +43,8 @@ class streamline(object):
             v_x (1D array): Cartesian x-velocity along the streamline, in [km/s].
             v_y (1D array): Cartesian y-velocity along the streamline, in [km/s].
             v_z (1D array): Cartesian z-velocity along the streamline, in [km/s].
-            r (1D array): Spherical r-position along the streamline, in [au].
+            r (1D array): Spherical r-position along the streamline, in [au]. In
+                other words, (x**2 + y**2 + z**2)**0.5.
             theta (1D array): Spherical theta-position along the streamline, in [rad].
             phi (1D array): Spherical phi-position along the streamline, in [deg].
             v_r (1D array): Spherical r-velocity along the streamline, in [km/s].
@@ -56,7 +57,7 @@ class streamline(object):
                 onto the sky, in [au]. Increasing y is northward.
             z_sky (1D array): Cartesian z-position along the streamline projected
                 onto the sky, in [au]. Increasing z is into the plane of the sky,
-                away from the observer.
+                away from the observer. ***CHECK THIS, SEEMS OPPOSITE
             r_sky (1D array): Cartesian distance from the star along the streamline
                 projected onto the sky, in [au]. Hypotenuse of `x_sky` and `y_sky`.
             v_x_sky (1D array): Cartesian x-velocity along the streamline projected
@@ -109,12 +110,12 @@ class streamline(object):
 
         # Check the centrifugal radius is inside the initial radius
         if self.r0.value <= self.r_cent.value:
-            raise ValueError("Outer radius cannot be smaller than centrifugal radius.")
+            raise ValueError("Outer radius (%.2f) cannot be smaller than centrifugal radius (%.2f)."%(self.r0.value, self.r_cent.value))
 
         # Check the final radius is inside the initial radius
         self.rmin = self.r_cent*0.5 if rmin is None else rmin*u.au
         if self.r0.value <= self.rmin.value:
-            raise ValueError("Outer radius cannot be smaller than inner radius.")
+            raise ValueError("Outer radius (%.2f) cannot be smaller than inner radius (%.2f)."%(self.r0.value, self.rmin.value))
         self.delta_r = self.r_cent*0.01 if delta_r is None else delta_r *u.au
 
 
@@ -167,57 +168,55 @@ class streamline(object):
             self.RA, self.Dec, self.LOS, self.r_proj, self.v_RA, self.v_Dec, self.v_LOS \
             = [np.nan], [np.nan], [np.nan], [np.nan], [np.nan], [np.nan], [np.nan]
 
-    def __str__(self):
+    def __str__(self, frame=''):
         """
-        Returns only the properties of the streamline. For those that are a
-        function of position along the streamline, only return the initial
-        value (i.e. at farthest distance from the star).
+        Returns/prints the properties of the streamline.
         """
         string = 'Streamline properties:'
         string += '\n'
-        string += '\n>> Central mass: '+str(self.mass)
-        string += '\n>> Angular frequency: '+str(self.omega)
-        string += '\n>> Initial radius: '+str(self.r0)
-        string += '\n>> Initial polar angle: '+str(self.theta0)
-        string += '\n>> Initial azimuthal angle: '+str(self.phi0)
-        string += '\n>> Initial radial velocity: '+str(self.v_r0)
-        string += '\n>> Centrifugal radius: '+str(self.r_cent)
-        string += '\n>> Minimum radius: '+str(self.rmin)
-        string += '\n>> Radial increments: '+str(self.delta_r)
+        string += '\n>> (mass) Central mass: '+str(self.mass)
+        string += '\n>> (omega) Angular frequency: '+str(self.omega)
+        string += '\n>> (r0) Initial radius: '+str(self.r0)
+        string += '\n>> (theta0) Initial polar angle: '+str(self.theta0)
+        string += '\n>> (phi0) Initial azimuthal angle: '+str(self.phi0)
+        string += '\n>> (v_r0) Initial radial velocity: '+str(self.v_r0)
+        string += '\n>> (r_cent) Centrifugal radius: '+str(self.r_cent)
+        string += '\n>> (rmin) Minimum radius: '+str(self.rmin)
+        string += '\n>> (delta_r) Radial increments: '+str(self.delta_r)
         string += '\n'
-        string += '\n>> Initial x-position: '+str(self.x[0])
-        string += '\n>> Initial y-position: '+str(self.y[0])
-        string += '\n>> Initial z-position: '+str(self.z[0])
-        string += '\n>> Initial x-velocity: '+str(self.v_x[0])
-        string += '\n>> Initial y-velocity: '+str(self.v_y[0])
-        string += '\n>> Initial z-velocity: '+str(self.v_z[0])
+        string += '\n>> (x) Initial x-position: '+str(self.x[0])
+        string += '\n>> (y) Initial y-position: '+str(self.y[0])
+        string += '\n>> (z) Initial z-position: '+str(self.z[0])
+        string += '\n>> (v_x) Initial x-velocity: '+str(self.v_x[0])
+        string += '\n>> (v_y) Initial y-velocity: '+str(self.v_y[0])
+        string += '\n>> (v_z) Initial z-velocity: '+str(self.v_z[0])
         string += '\n'
-        string += '\n>> Initial r-position: '+str(self.r[0])
-        string += '\n>> Initial theta-position: '+str(self.theta[0].to(u.deg))
-        string += '\n>> Initial phi-position: '+str(self.phi[0])
-        string += '\n>> Initial r-velocity: '+str(self.v_r[0])
-        string += '\n>> Initial theta-velocity: '+str(self.v_theta[0])
-        string += '\n>> Initial phi-velocity: '+str(self.v_phi[0])
+        string += '\n>> (r) Initial r-position: '+str(self.r[0])
+        string += '\n>> (theta) Initial theta-position: '+str(self.theta[0].to(u.deg))
+        string += '\n>> (phi) Initial phi-position: '+str(self.phi[0])
+        string += '\n>> (v_r) Initial r-velocity: '+str(self.v_r[0])
+        string += '\n>> (v_theta) Initial theta-velocity: '+str(self.v_theta[0])
+        string += '\n>> (v_phi) Initial phi-velocity: '+str(self.v_phi[0])
         string += '\n'
-        string += '\n>> Disk inclination: '+str(self.inc)
-        string += '\n>> Disk position angle: '+str(self.pa)
-        string += '\n>> Initial x-position on sky: '+str(self.x_sky[0])
-        string += '\n>> Initial y-position on sky: '+str(self.y_sky[0])
-        string += '\n>> Initial z-position on sky: '+str(self.z_sky[0])
-        string += '\n>> Initial r-position on sky: '+str(self.r_sky[0])
-        string += '\n>> Initial x-velocity on sky: '+str(self.v_x_sky[0])
-        string += '\n>> Initial y-velocity on sky: '+str(self.v_y_sky[0])
-        string += '\n>> Initial z-velocity on sky: '+str(self.v_z_sky[0])
+        string += '\n>> (inc) Disk inclination: '+str(self.inc)
+        string += '\n>> (pa) Disk position angle: '+str(self.pa)
+        string += '\n>> (x_sky) Initial x-position on sky: '+str(self.x_sky[0])
+        string += '\n>> (y_sky) Initial y-position on sky: '+str(self.y_sky[0])
+        string += '\n>> (z_sky) Initial z-position on sky: '+str(self.z_sky[0])
+        string += '\n>> (r_sky) Initial r-position on sky: '+str(self.r_sky[0])
+        string += '\n>> (v_x_sky) Initial x-velocity on sky: '+str(self.v_x_sky[0])
+        string += '\n>> (v_y_sky) Initial y-velocity on sky: '+str(self.v_y_sky[0])
+        string += '\n>> (v_z_sky) Initial z-velocity on sky: '+str(self.v_z_sky[0])
         string += '\n'
-        string += '\n>> Distance to the system: '+str(self.dist)
-        string += '\n>> Systemic velocity: '+str(self.v_sys)
-        string += '\n>> Initial RA-position on sky: '+str(self.RA[0])
-        string += '\n>> Initial Dec-position on sky: '+str(self.Dec[0])
-        string += '\n>> Initial LOS-position on sky: '+str(self.LOS[0])
-        string += '\n>> Initial R-position on sky: '+str(self.r_proj[0])
-        string += '\n>> Initial RA-velocity on sky: '+str(self.v_RA[0])
-        string += '\n>> Initial Dec-velocity on sky: '+str(self.v_Dec[0])
-        string += '\n>> Initial LOS-velocity on sky: '+str(self.v_LOS[0])
+        string += '\n>> (dist) Distance to the system: '+str(self.dist)
+        string += '\n>> (v_sys) Systemic velocity: '+str(self.v_sys)
+        string += '\n>> (RA) Initial RA-position on sky: '+str(self.RA[0])
+        string += '\n>> (Dec) Initial Dec-position on sky: '+str(self.Dec[0])
+        string += '\n>> (LOS) Initial LOS-position on sky: '+str(self.LOS[0])
+        string += '\n>> (r_proj) Initial R-position on sky: '+str(self.r_proj[0])
+        string += '\n>> (v_RA) Initial RA-velocity on sky: '+str(self.v_RA[0])
+        string += '\n>> (v_Dec) Initial Dec-velocity on sky: '+str(self.v_Dec[0])
+        string += '\n>> (v_LOS) Initial LOS-velocity on sky: '+str(self.v_LOS[0])
 
         return string
 
@@ -252,7 +251,7 @@ class streamline(object):
 
         :return difference in Phi angle, in radians
         """
-        print('np.tan(theta0) / np.tan(theta): ', np.tan(theta0) / np.tan(theta))
+        # print('np.tan(theta0) / np.tan(theta): ', np.tan(theta0) / np.tan(theta))
         ratio = np.tan(theta0) / np.tan(theta)
         if np.any((ratio < -1) | (ratio > 1)):
             print('WARNING: Polar angle is going to have trouble with arccos.')
@@ -303,6 +302,7 @@ class streamline(object):
             cos_ratio = np.cos(theta) / np.cos(theta0)
             if cos_ratio > 1.:
                 print('theta0={0}, theta_try={1} --> bad arccos calculation'.format(theta0, theta))
+                print('cos_ratio: ', cos_ratio)
                 return np.nan
             xi = np.arccos(cos_ratio) + orb_ang.to(u.rad).value
             geom = np.sin(theta0)**2 / (1 - ecc * np.cos(xi))
@@ -323,6 +323,7 @@ class streamline(object):
         nu = (self.v_r0 * np.sqrt(self.r_cent / (G * self.mass))).decompose().value
         print('mu = ', mu)
         print('nu = ', nu)
+        self.mu, self.nu = mu, nu
 
         # Jess: p represents distance from the star at which the particle hits the midplane
         p = self.r_cent * (np.sin(self.theta0)**2.)
@@ -331,6 +332,7 @@ class streamline(object):
         # Specific energy in dimensionless form; Eqn. 4 of Mendoza et al. (2009)
         epsilon = nu**2. + (mu**2. * np.sin(self.theta0)**2.) - (2. * mu)
         print('epsilon = ', epsilon)
+        self.epsilon = epsilon
 
         # Eccentricity of the orbit; Eqn. 6 of Mendoza et al. (2009)
         self.ecc = np.sqrt(1 + epsilon * np.sin(self.theta0)**2.)
@@ -341,11 +343,13 @@ class streamline(object):
         # orb_ang = np.arccos((1. - (mu * np.sin(theta0)**2.)) / self.ecc)
         orb_ang = np.arccos(arccos_argument) # Jess
         print('***This should be between -1 and 1: ', (1. - (mu * np.sin(self.theta0)**2.)) / self.ecc)
-        print('Initial orb_ang: ', orb_ang)
+        print('Initial orb_ang: ', orb_ang.to(u.deg))
 
         # Prepare to set the initial guess at the next theta value
-        tol = (6.e-12 * self.delta_r * self.omega / (self.v_r0+ (0.1 * u.km/u.s))).decompose().value # in radians
-        initguess = 2. * tol # in radians
+            # tol = (6.e-12 * self.delta_r * self.omega / (self.v_r0+ (0.1 * u.km/u.s))).decompose().value # in radians
+            # initguess = 2. * tol # in radians
+        tol = (6.e-5 * self.delta_r * self.omega / (self.v_r0+ (0.1 * u.km/u.s))).decompose().value # in radians
+        initguess = 10. * tol # in radians
         # In Jaime's original implementation, tol = 6.e-5 * [same business], for an epsilon of 0.01 km/s
         # In Jaime's original implementation, initguess = 10. * tol
         print('tolerance ', tol)
@@ -407,8 +411,7 @@ class streamline(object):
         :param v_r0: Initial radial velocity
         :return: v_r, v_theta, v_phi in units of km/s
         """
-
-        rc = self.r_cent#r_cent(mass=mass, omega=omega, r0=r0)
+        rc = self.r_cent #r_cent(mass=mass, omega=omega, r0=r0)
         r_to_rc = (r / rc).decompose().value
         v_k0 = self._get_vk(rc, mass=mass)
         # mu and nu are dimensionless
@@ -463,6 +466,7 @@ class streamline(object):
     def _get_streamline(self, mass=0.5*u.Msun, r0=1e4*u.au, theta0=30*u.deg,
                    phi0=15*u.deg, omega=1e-14/u.s, v_r0=0*u.km/u.s,
                    rmin=None, delta_r=1*u.au):
+                   # Missing: inc=0*u.deg, pa=0*u.deg,
         """
         it gets xyz coordinates and velocities for a stream line.
 
@@ -508,13 +512,21 @@ class streamline(object):
         y = r * np.sin(theta) * np.sin(phi)
         z = r * np.cos(theta)
 
-        return x, y, z, v_x, v_y, v_z, r, theta, phi, v_r, v_theta, v_phi
+        # Does the streamline hit the midplane before rmin?
+        idx = np.argmax(z<1e-10*u.au)+1
+        if idx!=1:
+            # If the answer is yes, don't return those non-sensical values
+            print('NOTE: Pruning streamline.')
+            return x[:idx], y[:idx], z[:idx], v_x[:idx], v_y[:idx], v_z[:idx], \
+                   r[:idx], theta[:idx], phi[:idx], v_r[:idx], v_theta[:idx], v_phi[:idx]
+        else:
+            return x, y, z, v_x, v_y, v_z, r, theta, phi, v_r, v_theta, v_phi
 
     ######################### Plotting functions #########################
 
-    def plot_xyz(self, ax=None):
+    def plot_xyz_diskframe(self, ax=None, elev=30, azim=45):
         """
-        Plot the streamer in xyz coordinates (the disk frame).
+        Plot the streamer in xyz coordinates (the disk frame), 3D view.
         """
 
         from matplotlib.patches import Circle
@@ -548,7 +560,9 @@ class streamline(object):
         ax.plot(self.x, self.y, self.z, color='orange', lw=2)
         ax.scatter(self.x[0], self.y[0], self.z[0], color='r')
         ax.scatter(self.x[-1], self.y[-1], self.z[-1], color='b')
-        ax.plot(self.x, self.y, np.zeros_like(self.x.value), color='orange', lw=1) # projection onto disk plane
+
+        # Plot the projection of the streamline onto the disk plane
+        ax.plot(self.x, self.y, np.zeros_like(self.x.value), color='orange', lw=2, linestyle='dotted')
 
         ######### Plot the centrifugal radius #########
         p = Circle((0, 0), self.r_cent.value, color='purple', fill=False, lw=1, linestyle='dashed')
@@ -569,6 +583,206 @@ class streamline(object):
         ax.add_patch(p)
         art3d.pathpatch_2d_to_3d(p, z=0, zdir="z")
 
-        ax.view_init(elev=90., azim=45)
+        ax.view_init(elev=elev, azim=azim)
+
+        return #ax
+
+    def plot_xyz_as_observer(self, ax=None, elev=30, azim=45):
+        """
+        Plot the streamer in xyz coordinates (the disk frame), and a second time
+        from the observer point of view.
+        """
+        if self.inc == np.nan:
+            if self.pa == np.nan:
+                raise ValueError("Cannot use this function if streamline was not initialized with ``inc`` or ``pa``.")
+
+        from matplotlib.patches import Circle
+        import mpl_toolkits.mplot3d.art3d as art3d
+
+        # Generate the axes.
+        fig     = plt.figure(figsize=(7.09*2, 7.09))
+        gs      = fig.add_gridspec(ncols=2, nrows=1, width_ratios=[1, 1], height_ratios=[1])
+        ax1      = fig.add_subplot(gs[0,0], projection='3d')
+        ax2      = fig.add_subplot(gs[0,1], projection='3d')
+
+        r_max = self.r0.value
+        for ax in [ax1, ax2]:
+            ax.set_box_aspect([1,1,1])
+            ax.set_xlim(-1.0*r_max, 1.0*r_max)
+            ax.set_ylim(-1.0*r_max, 1.0*r_max)
+            ax.set_zlim(-1.0*r_max, 1.0*r_max)
+            ax.plot([-1.0*r_max, 1.0*r_max],[0, 0],[0, 0], color='k', lw=1) # plot xyz axes for visual clarity
+            ax.plot([0, 0],[-1.0*r_max, 1.0*r_max],[0, 0], color='k', lw=1) # plot xyz axes for visual clarity
+            ax.plot([0, 0],[0, 0],[-1.0*r_max, 1.0*r_max], color='k', lw=1) # plot xyz axes for visual clarity
+            ax.grid(alpha=0.5, color='grey')
+            ax.scatter([0],[0],[0], marker='*', color='k', s=50, zorder=10000)
+            ax.scatter([0],[0],[0], marker='*', color='w', s=25, zorder=10000)
+            # Plot the xy plane for visual clarity
+            xx, yy = np.meshgrid(np.arange(-1.0*r_max, 1.0*r_max, 1), np.arange(-1.0*r_max, 1.0*r_max, 1))
+            ax.plot_surface(xx, yy, np.zeros_like(xx), alpha=0.2, color='grey')
+        ax1.set_xlabel('x (au)')
+        ax1.set_ylabel('y (au)')
+        ax1.set_zlabel('z (au)')
+        ax2.set_xlabel(r'$x_{\rm sky}$ (au)')
+        ax2.set_ylabel(r'$y_{\rm sky}$ (au)')
+        ax2.set_zlabel(r'$z_{\rm sky}$ (au)')
+
+        ax1.plot(self.x, self.y, self.z, color='orange', lw=2)
+        ax1.scatter(self.x[0], self.y[0], self.z[0], color='r')
+        ax1.scatter(self.x[-1], self.y[-1], self.z[-1], color='b')
+        ax1.plot(self.x, self.y, np.zeros_like(self.x.value), color='orange', lw=1) # projection onto disk plane
+
+        ax2.plot(self.x_sky, self.y_sky, self.z_sky, color='orange', lw=2)
+        print('vz_sky: ', self.v_z_sky)
+        ax2.scatter(self.x_sky[0], self.y_sky[0], self.z_sky[0], color='r')
+        ax2.scatter(self.x_sky[-1], self.y_sky[-1], self.z_sky[-1], color='b')
+
+        # Plot the projection of the streamline onto the disk plane
+        ax2.plot(self.x_sky, self.y_sky, np.zeros_like(self.x_sky.value), color='orange', lw=2, linestyle='dotted')
+
+
+        ######### Plot the centrifugal radius #########
+        p = Circle((0, 0), self.r_cent.value, color='purple', fill=False, lw=1, linestyle='dashed')
+        ax1.add_patch(p)
+        art3d.pathpatch_2d_to_3d(p, z=0, zdir="z")
+        p = Circle((0, 0), self.r_cent.value, color='purple', fill=False, lw=1, linestyle='dashed')
+        ax2.add_patch(p)
+        art3d.pathpatch_2d_to_3d(p, z=0, zdir="z")
+
+        ############## Plot the "cloud" (sphere) for visual clarity ###############
+        # Create a meshgrid for spherical coordinates
+        phi         = np.linspace(0, 2 * np.pi, 100)
+        theta       = np.linspace(0, np.pi, 50)
+        phi, theta  = np.meshgrid(phi, theta)
+        # Convert from spherical coordinates to cartesian
+        x = self.r0 * np.sin(theta) * np.cos(phi)
+        y = self.r0 * np.sin(theta) * np.sin(phi)
+        z = self.r0 * np.cos(theta)
+        ax1.plot_surface(x, y, z, alpha=0.075, color='gainsboro', edgecolor='k', lw=0.5, rstride=3, cstride=3)
+        ax2.plot_surface(x, y, z, alpha=0.075, color='gainsboro', edgecolor='k', lw=0.5, rstride=3, cstride=3)
+        p = Circle((0, 0), self.r0.value, color='k', fill=False, lw=1, alpha=1) # Sphere's "equator"
+        ax1.add_patch(p)
+        art3d.pathpatch_2d_to_3d(p, z=0, zdir="z")
+        p = Circle((0, 0), self.r0.value, color='k', fill=False, lw=1, alpha=1) # Sphere's "equator"
+        ax2.add_patch(p)
+        art3d.pathpatch_2d_to_3d(p, z=0, zdir="z")
+
+        # ax1.view_init(elev=self.inc.value, azim=self.pa.value-90)
+        ax1.set_title("Disk frame")
+        ax1.view_init(elev=elev, azim=azim)
+        ax2.set_title("Sky (observer's) frame")
+        ax2.view_init(elev=elev, azim=azim)
+
+        return #ax
+
+
+    def plot_xyz_sky(self, ax=None, elev=30, azim=45):
+        """
+        Plot the streamer in xyz_sky coordinates (the sky frame).
+        """
+
+        from matplotlib.patches import Circle
+        import mpl_toolkits.mplot3d.art3d as art3d
+
+        # Generate the axes.
+        if ax is None:
+            fig     = plt.figure(figsize=(7.09, 7.09))
+            gs      = fig.add_gridspec(ncols=1, nrows=1, width_ratios=[1], height_ratios=[1])
+            ax      = fig.add_subplot(gs[0,0], projection='3d')
+
+        r_max = self.r0.value
+        ax.set_box_aspect([1,1,1])
+        ax.set_xlim(-1.0*r_max, 1.0*r_max)
+        ax.set_ylim(-1.0*r_max, 1.0*r_max)
+        ax.set_zlim(-1.0*r_max, 1.0*r_max)
+        ax.set_xlabel(r'$x_{\rm sky}$ (au)')
+        ax.set_ylabel(r'$y_{\rm sky}$ (au)')
+        ax.set_zlabel(r'$z_{\rm sky}$ (au)')
+        ax.plot([-1.0*r_max, 1.0*r_max],[0, 0],[0, 0], color='k', lw=1) # plot xyz axes for visual clarity
+        ax.plot([0, 0],[-1.0*r_max, 1.0*r_max],[0, 0], color='k', lw=1) # plot xyz axes for visual clarity
+        ax.plot([0, 0],[0, 0],[-1.0*r_max, 1.0*r_max], color='k', lw=1) # plot xyz axes for visual clarity
+        ax.grid(alpha=0.5, color='grey')
+        ax.scatter([0],[0],[0], marker='*', color='k', s=50, zorder=10000)
+        ax.scatter([0],[0],[0], marker='*', color='w', s=25, zorder=10000)
+
+        # Plot the xz plane (disk plane) for visual clarity
+        xx, yy = np.meshgrid(np.arange(-1.0*r_max, 1.0*r_max, 1), np.arange(-1.0*r_max, 1.0*r_max, 1))
+        ax.plot_surface(xx, yy, np.zeros_like(xx), alpha=0.2, color='grey')
+
+        ax.plot(self.x_sky, self.y_sky, self.z_sky, color='orange', lw=2)
+        ax.scatter(self.x_sky[0], self.y_sky[0], self.z_sky[0], color='r')
+        ax.scatter(self.x_sky[-1], self.y_sky[-1], self.z_sky[-1], color='b')
+        ax.plot(self.x_sky, self.y_sky, np.zeros_like(self.x_sky.value), color='orange', lw=1) # projection onto disk plane
+
+        ######### Plot the centrifugal radius #########
+        p = Circle((0, 0), self.r_cent.value, color='purple', fill=False, lw=1, linestyle='dashed')
+        ax.add_patch(p)
+        art3d.pathpatch_2d_to_3d(p, z=0, zdir="z")
+
+        ############## Plot the "cloud" (sphere) for visual clarity ###############
+        # Create a meshgrid for spherical coordinates
+        phi         = np.linspace(0, 2 * np.pi, 100)
+        theta       = np.linspace(0, np.pi, 50)
+        phi, theta  = np.meshgrid(phi, theta)
+        # Convert from spherical coordinates to cartesian
+        x = self.r0 * np.sin(theta) * np.cos(phi)
+        y = self.r0 * np.sin(theta) * np.sin(phi)
+        z = self.r0 * np.cos(theta)
+        ax.plot_surface(x, y, z, alpha=0.075, color='gainsboro', edgecolor='k', lw=0.5, rstride=3, cstride=3)
+        p = Circle((0, 0), self.r0.value, color='k', fill=False, lw=1, alpha=1) # Sphere's "equator"
+        ax.add_patch(p)
+        art3d.pathpatch_2d_to_3d(p, z=0, zdir="z")
+
+        ax.view_init(elev=elev, azim=azim)
+
+        return #ax
+
+    def plot_6panel_xyz_vxyz(self, ax=None):
+        """
+        Plot the streamer xyz coordinates and xyz velocities, as a function
+        of the radial coordinate.
+        """
+
+        # Generate the axes.
+        if ax is None:
+            fig     = plt.figure(figsize=(7.09*2, 7.09))
+            gs      = fig.add_gridspec(ncols=3, nrows=2, width_ratios=[1, 1, 1], height_ratios=[1, 1])
+            ax1      = fig.add_subplot(gs[0,0])
+            ax2      = fig.add_subplot(gs[0,1])
+            ax3      = fig.add_subplot(gs[0,2])
+            ax4      = fig.add_subplot(gs[1,0])
+            ax5      = fig.add_subplot(gs[1,1])
+            ax6      = fig.add_subplot(gs[1,2])
+        axes = [ax1, ax2, ax3, ax4, ax5, ax6]
+
+        for ax in [ax4, ax5, ax6]:
+            ax.set_xlim(0, self.r0.value)
+            ax.set_xlabel('r [au]')
+            ax.axhline(0, color='grey', lw=2, linestyle='dashed')
+        for ax in [ax1, ax2, ax3]:
+            ax.set_xlim(0, self.r0.value)
+            ax.set_ylim(-self.r0.value, self.r0.value)
+            ax.axhline(0, color='grey', lw=2, linestyle='dashed')
+
+        ax1.set_ylabel('x [au]')
+        ax2.set_ylabel('y [au]')
+        ax3.set_ylabel('z [au]')
+
+        ax4.set_ylabel('v_x [km/s]')
+        ax5.set_ylabel('v_y [km/s]')
+        ax6.set_ylabel('v_z [km/s]')
+
+        r = np.sqrt(self.x**2 + self.y**2 + self.z**2)
+
+        for i, curve in enumerate([self.x, self.y, self.z, self.v_x, self.v_y, self.v_z]):
+            axes[i].axvline(self.r_cent.value, color='purple', lw=2, linestyle='dashed')
+            # axes[i].plot(self.r, curve, color='orange', lw=2)
+            # axes[i].scatter(self.r[0], curve[0], color='r', zorder=10)
+            # axes[i].scatter(self.r[-1], curve[-1], color='b', zorder=10)
+            axes[i].plot(r, curve, color='orange', lw=2)
+            axes[i].scatter(r[0], curve[0], color='r', zorder=10)
+            axes[i].scatter(r[-1], curve[-1], color='b', zorder=10)
+
+        plt.tight_layout()
 
         return #ax
