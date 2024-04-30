@@ -163,7 +163,7 @@ class streamline(object):
             self.inc, self.pa = np.nan, np.nan
             self.x_sky, self.y_sky, self.z_sky, self.r_sky, self.v_x_sky, self.v_y_sky, self.v_z_sky \
             = [np.nan], [np.nan], [np.nan], [np.nan], [np.nan], [np.nan], [np.nan]
-            print("Distance `dist` and systemic velocity `v_sys` may have been provided, but will not be used.")
+            # print("Distance `dist` and systemic velocity `v_sys` may have been provided, but will not be used.")
             self.dist, self.v_sys = np.nan, np.nan
             self.RA, self.Dec, self.LOS, self.r_proj, self.v_RA, self.v_Dec, self.v_LOS \
             = [np.nan], [np.nan], [np.nan], [np.nan], [np.nan], [np.nan], [np.nan]
@@ -172,8 +172,8 @@ class streamline(object):
         """
         Returns/prints the properties of the streamline.
         """
-        string = 'Streamline properties:'
-        string += '\n'
+        string = '\n-------------------------------'
+        string += '\nStreamline system properties:'
         string += '\n>> (mass) Central mass: '+str(self.mass)
         string += '\n>> (omega) Angular frequency: '+str(self.omega)
         string += '\n>> (r0) Initial radius: '+str(self.r0)
@@ -183,21 +183,25 @@ class streamline(object):
         string += '\n>> (r_cent) Centrifugal radius: '+str(self.r_cent)
         string += '\n>> (rmin) Minimum radius: '+str(self.rmin)
         string += '\n>> (delta_r) Radial increments: '+str(self.delta_r)
-        string += '\n'
+        string += '\n-------------------------------'
+        string += '\nDisk frame coordinates (Cartesian):'
         string += '\n>> (x) Initial x-position: '+str(self.x[0])
         string += '\n>> (y) Initial y-position: '+str(self.y[0])
         string += '\n>> (z) Initial z-position: '+str(self.z[0])
         string += '\n>> (v_x) Initial x-velocity: '+str(self.v_x[0])
         string += '\n>> (v_y) Initial y-velocity: '+str(self.v_y[0])
         string += '\n>> (v_z) Initial z-velocity: '+str(self.v_z[0])
-        string += '\n'
+        string += '\n-------------------------------'
+        string += '\nDisk frame coordinates (Polar):'
         string += '\n>> (r) Initial r-position: '+str(self.r[0])
-        string += '\n>> (theta) Initial theta-position: '+str(self.theta[0].to(u.deg))
+        string += '\n>> (theta) Initial theta-position: '+str(self.theta[0])
+        string += '\n>> (theta) Initial theta-position in [degrees]: '+str(self.theta[0].to(u.deg))
         string += '\n>> (phi) Initial phi-position: '+str(self.phi[0])
         string += '\n>> (v_r) Initial r-velocity: '+str(self.v_r[0])
         string += '\n>> (v_theta) Initial theta-velocity: '+str(self.v_theta[0])
         string += '\n>> (v_phi) Initial phi-velocity: '+str(self.v_phi[0])
-        string += '\n'
+        string += '\n-------------------------------'
+        string += '\nSky frame coordinates (Cartesian):'
         string += '\n>> (inc) Disk inclination: '+str(self.inc)
         string += '\n>> (pa) Disk position angle: '+str(self.pa)
         string += '\n>> (x_sky) Initial x-position on sky: '+str(self.x_sky[0])
@@ -207,7 +211,8 @@ class streamline(object):
         string += '\n>> (v_x_sky) Initial x-velocity on sky: '+str(self.v_x_sky[0])
         string += '\n>> (v_y_sky) Initial y-velocity on sky: '+str(self.v_y_sky[0])
         string += '\n>> (v_z_sky) Initial z-velocity on sky: '+str(self.v_z_sky[0])
-        string += '\n'
+        string += '\n-------------------------------'
+        string += '\nSky frame coordinates (Angular):'
         string += '\n>> (dist) Distance to the system: '+str(self.dist)
         string += '\n>> (v_sys) Systemic velocity: '+str(self.v_sys)
         string += '\n>> (RA) Initial RA-position on sky: '+str(self.RA[0])
@@ -217,6 +222,7 @@ class streamline(object):
         string += '\n>> (v_RA) Initial RA-velocity on sky: '+str(self.v_RA[0])
         string += '\n>> (v_Dec) Initial Dec-velocity on sky: '+str(self.v_Dec[0])
         string += '\n>> (v_LOS) Initial LOS-velocity on sky: '+str(self.v_LOS[0])
+        string += '\n-------------------------------\n'
 
         return string
 
@@ -301,8 +307,7 @@ class streamline(object):
             """
             cos_ratio = np.cos(theta) / np.cos(theta0)
             if cos_ratio > 1.:
-                print('theta0={0}, theta_try={1} --> bad arccos calculation'.format(theta0, theta))
-                print('cos_ratio: ', cos_ratio)
+                print('WARNING: Bad arcos calculation. theta0={0}, theta_try={1}, ratio={2}'.format(theta0, theta, cos_ratio))
                 return np.nan
             xi = np.arccos(cos_ratio) + orb_ang.to(u.rad).value
             geom = np.sin(theta0)**2 / (1 - ecc * np.cos(xi))
@@ -321,29 +326,24 @@ class streamline(object):
         mu = (self.r_cent / self.r0).decompose().value
         # nu represents the initial amount of radial velocity measured in units of the Keplerian velocity at position r_u (=r_cent)
         nu = (self.v_r0 * np.sqrt(self.r_cent / (G * self.mass))).decompose().value
-        print('mu = ', mu)
-        print('nu = ', nu)
         self.mu, self.nu = mu, nu
 
-        # Jess: p represents distance from the star at which the particle hits the midplane
+        # Jess: p represents distance from the star at which the particle hits the midplane?
         p = self.r_cent * (np.sin(self.theta0)**2.)
-        print('p = ', p)
 
         # Specific energy in dimensionless form; Eqn. 4 of Mendoza et al. (2009)
         epsilon = nu**2. + (mu**2. * np.sin(self.theta0)**2.) - (2. * mu)
-        print('epsilon = ', epsilon)
         self.epsilon = epsilon
 
         # Eccentricity of the orbit; Eqn. 6 of Mendoza et al. (2009)
         self.ecc = np.sqrt(1 + epsilon * np.sin(self.theta0)**2.)
-        print('self.ecc = ', self.ecc)
 
         # Condition on the initial azimuthal angle; Eqn. 7 of Mendoza et al. (2009)
         arccos_argument = np.clip((1. - (mu * np.sin(self.theta0)**2.)) / self.ecc, -1, 1) # Jess
         # orb_ang = np.arccos((1. - (mu * np.sin(theta0)**2.)) / self.ecc)
         orb_ang = np.arccos(arccos_argument) # Jess
-        print('***This should be between -1 and 1: ', (1. - (mu * np.sin(self.theta0)**2.)) / self.ecc)
-        print('Initial orb_ang: ', orb_ang.to(u.deg))
+        # print('***This should be between -1 and 1: ', (1. - (mu * np.sin(self.theta0)**2.)) / self.ecc)
+        # print('Initial orb_ang: ', orb_ang.to(u.deg))
 
         # Prepare to set the initial guess at the next theta value
             # tol = (6.e-12 * self.delta_r * self.omega / (self.v_r0+ (0.1 * u.km/u.s))).decompose().value # in radians
@@ -352,7 +352,7 @@ class streamline(object):
         initguess = 10. * tol # in radians
         # In Jaime's original implementation, tol = 6.e-5 * [same business], for an epsilon of 0.01 km/s
         # In Jaime's original implementation, initguess = 10. * tol
-        print('tolerance ', tol)
+        print('Computing solution... Tolerance: ', tol)
 
         # Set the initial guess at the next theta value
         if theta0_rad < np.radians(90): # The streamline starts "above" the midplane (z>0)
@@ -516,7 +516,7 @@ class streamline(object):
         idx = np.argmax(z<1e-10*u.au)+1
         if idx!=1:
             # If the answer is yes, don't return those non-sensical values
-            print('NOTE: Pruning streamline.')
+            print('NOTE: The streamline hit the midplane before reaching ``rmin``.')
             return x[:idx], y[:idx], z[:idx], v_x[:idx], v_y[:idx], v_z[:idx], \
                    r[:idx], theta[:idx], phi[:idx], v_r[:idx], v_theta[:idx], v_phi[:idx]
         else:
@@ -587,7 +587,7 @@ class streamline(object):
 
         return #ax
 
-    def plot_xyz_as_observer(self, ax=None, elev=30, azim=45):
+    def plot_xyz_diskframe_skyframe(self, ax=None, elev=30, azim=45):
         """
         Plot the streamer in xyz coordinates (the disk frame), and a second time
         from the observer point of view.
@@ -633,7 +633,6 @@ class streamline(object):
         ax1.plot(self.x, self.y, np.zeros_like(self.x.value), color='orange', lw=1) # projection onto disk plane
 
         ax2.plot(self.x_sky, self.y_sky, self.z_sky, color='orange', lw=2)
-        print('vz_sky: ', self.v_z_sky)
         ax2.scatter(self.x_sky[0], self.y_sky[0], self.z_sky[0], color='r')
         ax2.scatter(self.x_sky[-1], self.y_sky[-1], self.z_sky[-1], color='b')
 
@@ -674,6 +673,151 @@ class streamline(object):
         ax2.view_init(elev=elev, azim=azim)
 
         return #ax
+
+    def plot_coordinate_transformations(self, ax=None, elev=30, azim=45):
+        """
+        Plot three panels: (1) The streamer in xyz coordinates (the disk frame),
+        which is the same as plot_xyz_diskframe(); (2) The projected sky frame
+        Cartesian coordinates and line-of-sight velocity; (3) The projected sky
+        frame angular coordinates and line-of-sight velocity. This provides a
+        view of all three coordinate systems.
+        """
+        if self.dist == np.nan:
+            if self.v_sys == np.nan:
+                raise ValueError("Cannot use this function if streamline was not initialized with ``dist`` or ``v_sys``.")
+
+        from matplotlib.patches import Circle
+        import mpl_toolkits.mplot3d.art3d as art3d
+
+        # Generate the axes.
+        fig     = plt.figure(figsize=(7.09*1.5, 7.09*0.5))
+        gs      = fig.add_gridspec(ncols=3, nrows=1, width_ratios=[1, 1, 1], height_ratios=[1])
+        ax1      = fig.add_subplot(gs[0,0], projection='3d')
+        ax2      = fig.add_subplot(gs[0,1])
+        ax3      = fig.add_subplot(gs[0,2])
+
+        r_max = self.r0.value
+        for ax in [ax1]:
+            ax.set_box_aspect([1,1,1])
+            ax.set_xlim(-1.0*r_max, 1.0*r_max)
+            ax.set_ylim(-1.0*r_max, 1.0*r_max)
+            ax.set_zlim(-1.0*r_max, 1.0*r_max)
+            ax1.set_xlabel('x (au)')
+            ax1.set_ylabel('y (au)')
+            ax1.set_zlabel('z (au)')
+            ax.plot([-1.0*r_max, 1.0*r_max],[0, 0],[0, 0], color='k', lw=1) # plot xyz axes for visual clarity
+            ax.plot([0, 0],[-1.0*r_max, 1.0*r_max],[0, 0], color='k', lw=1) # plot xyz axes for visual clarity
+            ax.plot([0, 0],[0, 0],[-1.0*r_max, 1.0*r_max], color='k', lw=1) # plot xyz axes for visual clarity
+            ax.grid(alpha=0.5, color='grey')
+            ax.scatter([0],[0],[0], marker='*', color='k', s=50, zorder=10000)
+            ax.scatter([0],[0],[0], marker='*', color='w', s=25, zorder=10000)
+            # Plot the xy plane for visual clarity
+            xx, yy = np.meshgrid(np.arange(-1.0*r_max, 1.0*r_max, 1), np.arange(-1.0*r_max, 1.0*r_max, 1))
+            ax.plot_surface(xx, yy, np.zeros_like(xx), alpha=0.2, color='grey')
+        for ax in [ax2]:
+            ax.set_xlim(-1.0*r_max, 1.0*r_max)
+            ax.set_ylim(-1.0*r_max, 1.0*r_max)
+        for ax in [ax3]:
+            ax.set_xlim(-1.0*r_max/self.dist.value, 1.0*r_max/self.dist.value)
+            ax.set_ylim(-1.0*r_max/self.dist.value, 1.0*r_max/self.dist.value)
+            ax.invert_xaxis()
+        for ax in [ax2, ax3]:
+            ax.scatter([0],[0], marker='*', color='k', s=50, zorder=10000)
+            ax.scatter([0],[0], marker='*', color='w', s=25, zorder=10000)
+            ax.set_aspect('equal')
+
+        ax2.set_xlabel(r'$x_{\rm sky}$ (au)')
+        ax2.set_ylabel(r'$y_{\rm sky}$ (au)')
+        ax3.set_xlabel(r'RA offset (arcsec)')
+        ax3.set_ylabel(r'Dec offset (arcsec)')
+
+        ax1.plot(self.x, self.y, self.z, color='orange', lw=2)
+        ax1.scatter(self.x[0], self.y[0], self.z[0], color='r')
+        ax1.scatter(self.x[-1], self.y[-1], self.z[-1], color='b')
+        ax1.plot(self.x, self.y, np.zeros_like(self.x.value), color='orange', lw=1) # projection onto disk plane
+
+        ax2.scatter(self.x_sky[0], self.y_sky[0], color='r')
+        ax2.scatter(self.x_sky[-1], self.y_sky[-1], color='b')
+        ax2.plot(self.x_sky, self.y_sky, color='orange', lw=2)
+
+        ax3.scatter(self.RA[0], self.Dec[0], color='r')
+        ax3.scatter(self.RA[-1], self.Dec[-1], color='b')
+        ax3.plot(self.RA, self.Dec, color='orange', lw=2)
+
+        ######### Plot the centrifugal radius #########
+        p = Circle((0, 0), self.r_cent.value, color='purple', fill=False, lw=1, linestyle='dashed')
+        ax1.add_patch(p)
+        art3d.pathpatch_2d_to_3d(p, z=0, zdir="z")
+        # TODO: INCLINE AND ROTATE THESE CIRCLES TO ELLIPSES ACCORDING TO INC, PA
+        # p = Circle((0, 0), self.r_cent.value, color='purple', fill=False, lw=1, linestyle='dashed')
+        # ax2.add_patch(p)
+        # p = Circle((0, 0), self.r_cent.value/self.dist.value, color='purple', fill=False, lw=1, linestyle='dashed')
+        # ax3.add_patch(p)
+
+        ############## Plot the "cloud" (sphere) for visual clarity ###############
+        # Create a meshgrid for spherical coordinates
+        phi         = np.linspace(0, 2 * np.pi, 100)
+        theta       = np.linspace(0, np.pi, 50)
+        phi, theta  = np.meshgrid(phi, theta)
+        # Convert from spherical coordinates to cartesian
+        x = self.r0 * np.sin(theta) * np.cos(phi)
+        y = self.r0 * np.sin(theta) * np.sin(phi)
+        z = self.r0 * np.cos(theta)
+        ax1.plot_surface(x, y, z, alpha=0.075, color='gainsboro', edgecolor='k', lw=0.5, rstride=3, cstride=3)
+        p = Circle((0, 0), self.r0.value, color='k', fill=False, lw=1, alpha=1) # Sphere's "equator"
+        ax1.add_patch(p)
+        art3d.pathpatch_2d_to_3d(p, z=0, zdir="z")
+
+        # ax1.view_init(elev=self.inc.value, azim=self.pa.value-90)
+        ax1.set_title("Disk frame")
+        ax1.view_init(elev=elev, azim=azim)
+        ax2.set_title("Sky frame (Cartesian)")
+        ax3.set_title("Sky frame (Angular)")
+
+        plt.tight_layout()
+
+        return #ax
+
+    def plot_model(self, ax=None):
+        """
+        Plot the streamer on the sky (RA, Dec coordinates) and in PV space
+        (line-of-sight velocity as a function of projected radial coordinate).
+        """
+        if self.inc == np.nan:
+            if self.pa == np.nan:
+                raise ValueError("Cannot use this function if streamline was not initialized with ``inc`` or ``pa``.")
+
+        from matplotlib.patches import Circle
+
+        # Generate the axes.
+        fig     = plt.figure(figsize=(7.09*1.25, 7.09*0.5))
+        gs      = fig.add_gridspec(ncols=2, nrows=1, width_ratios=[1, 1.5], height_ratios=[1])
+        ax1      = fig.add_subplot(gs[0,0])
+        ax2      = fig.add_subplot(gs[0,1])
+
+        r_max = self.r0.value/self.dist.value
+        ax1.set_xlabel('R.A. offset (arcsec)')
+        ax1.set_ylabel('Dec. offset (arcsec)')
+        ax1.scatter([0],[0], marker='*', color='k', s=50, zorder=10000)
+        ax1.scatter([0],[0], marker='*', color='w', s=25, zorder=10000)
+        ax1.set_xlim(-1.0*r_max, 1.0*r_max)
+        ax1.set_ylim(-1.0*r_max, 1.0*r_max)
+        ax1.set_aspect('equal')
+        ax1.invert_xaxis()
+        ax2.set_xlabel(r'Projected distance (au)')
+        ax2.set_ylabel(r'$v_{\rm los}$ (km/s)')
+
+        ax1.plot(self.RA, self.Dec, color='orange', lw=2)
+        ax1.scatter(self.RA[0], self.Dec[0], color='r')
+        ax1.scatter(self.RA[-1], self.Dec[-1], color='b')
+
+        ax2.axhline(self.v_sys.value, color='k', linestyle='dashed')
+        ax2.plot(self.r_sky, self.v_LOS, color='orange', lw=2)
+        ax2.scatter(self.r_sky[0], self.v_LOS[0], color='r')
+        ax2.scatter(self.r_sky[-1], self.v_LOS[-1], color='b')
+
+        plt.tight_layout()
+        return ax1, ax2
 
 
     def plot_xyz_sky(self, ax=None, elev=30, azim=45):
@@ -737,7 +881,7 @@ class streamline(object):
 
         return #ax
 
-    def plot_6panel_xyz_vxyz(self, ax=None):
+    def plot_6panel_cartesian(self, ax=None):
         """
         Plot the streamer xyz coordinates and xyz velocities, as a function
         of the radial coordinate.
@@ -758,11 +902,11 @@ class streamline(object):
         for ax in [ax4, ax5, ax6]:
             ax.set_xlim(0, self.r0.value)
             ax.set_xlabel('r [au]')
-            ax.axhline(0, color='grey', lw=2, linestyle='dashed')
+            ax.axhline(0, color='k', lw=1)
         for ax in [ax1, ax2, ax3]:
             ax.set_xlim(0, self.r0.value)
             ax.set_ylim(-self.r0.value, self.r0.value)
-            ax.axhline(0, color='grey', lw=2, linestyle='dashed')
+            ax.axhline(0, color='k', lw=1)
 
         ax1.set_ylabel('x [au]')
         ax2.set_ylabel('y [au]')
@@ -772,16 +916,59 @@ class streamline(object):
         ax5.set_ylabel('v_y [km/s]')
         ax6.set_ylabel('v_z [km/s]')
 
-        r = np.sqrt(self.x**2 + self.y**2 + self.z**2)
-
         for i, curve in enumerate([self.x, self.y, self.z, self.v_x, self.v_y, self.v_z]):
             axes[i].axvline(self.r_cent.value, color='purple', lw=2, linestyle='dashed')
-            # axes[i].plot(self.r, curve, color='orange', lw=2)
-            # axes[i].scatter(self.r[0], curve[0], color='r', zorder=10)
-            # axes[i].scatter(self.r[-1], curve[-1], color='b', zorder=10)
-            axes[i].plot(r, curve, color='orange', lw=2)
-            axes[i].scatter(r[0], curve[0], color='r', zorder=10)
-            axes[i].scatter(r[-1], curve[-1], color='b', zorder=10)
+            axes[i].plot(self.r, curve, color='orange', lw=2)
+            axes[i].scatter(self.r[0], curve[0], color='r', zorder=10)
+            axes[i].scatter(self.r[-1], curve[-1], color='b', zorder=10)
+
+        plt.tight_layout()
+
+        return #ax
+
+    def plot_6panel_polar(self, ax=None):
+        """
+        Plot the streamer r,theta,phi coordinates and r,theta,phi velocities, as
+        a function of the radial coordinate.
+        """
+
+        # Generate the axes.
+        if ax is None:
+            fig     = plt.figure(figsize=(7.09*2, 7.09))
+            gs      = fig.add_gridspec(ncols=3, nrows=2, width_ratios=[1, 1, 1], height_ratios=[1, 1])
+            ax1      = fig.add_subplot(gs[0,0])
+            ax2      = fig.add_subplot(gs[0,1])
+            ax3      = fig.add_subplot(gs[0,2])
+            ax4      = fig.add_subplot(gs[1,0])
+            ax5      = fig.add_subplot(gs[1,1])
+            ax6      = fig.add_subplot(gs[1,2])
+        axes = [ax1, ax2, ax3, ax4, ax5, ax6]
+
+        for ax in [ax4, ax5, ax6]:
+            ax.set_xlim(0, self.r0.value)
+            ax.set_xlabel('r [au]')
+            ax.axhline(0, color='k', lw=1)
+        for ax in [ax1, ax2, ax3]:
+            ax.set_xlim(0, self.r0.value)
+            ax.axhline(0, color='k', lw=1)
+
+        ax1.set_ylabel('r [au]')
+        ax1.set_ylim(-self.r0.value, self.r0.value)
+        ax2.set_ylabel('theta [degrees]')
+        ax2.set_ylim(0, 180)
+        ax2.axhline(90, color='k', lw=1)
+        ax3.set_ylabel('phi [degrees]')
+        ax3.set_ylim(0, 360)
+
+        ax4.set_ylabel('v_r [km/s]')
+        ax5.set_ylabel('v_theta [km/s]')
+        ax6.set_ylabel('v_phi [km/s]')
+
+        for i, curve in enumerate([self.r, self.theta.to(u.deg), self.phi, self.v_r, self.v_theta, self.v_phi]):
+            axes[i].axvline(self.r_cent.value, color='purple', lw=2, linestyle='dashed')
+            axes[i].plot(self.r, curve, color='orange', lw=2)
+            axes[i].scatter(self.r[0], curve[0], color='r', zorder=10)
+            axes[i].scatter(self.r[-1], curve[-1], color='b', zorder=10)
 
         plt.tight_layout()
 
