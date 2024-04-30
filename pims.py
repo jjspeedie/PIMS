@@ -513,14 +513,67 @@ class streamline(object):
         z = r * np.cos(theta)
 
         # Does the streamline hit the midplane before rmin?
-        idx = np.argmax(z<1e-10*u.au)+1
-        if idx!=1:
+        idxs = (np.abs(z) > 1.*u.au)
+        # idx = np.argmax(z<1e0*u.au)+1
+        # if idx!=1:
+        if idxs.sum() > 0:
             # If the answer is yes, don't return those non-sensical values
             print('NOTE: The streamline hit the midplane before reaching ``rmin``.')
-            return x[:idx], y[:idx], z[:idx], v_x[:idx], v_y[:idx], v_z[:idx], \
-                   r[:idx], theta[:idx], phi[:idx], v_r[:idx], v_theta[:idx], v_phi[:idx]
+            return x[idxs], y[idxs], z[idxs], v_x[idxs], v_y[idxs], v_z[idxs], \
+                   r[idxs], theta[idxs], phi[idxs], v_r[idxs], v_theta[idxs], v_phi[idxs]
+            # return x[:idx], y[:idx], z[:idx], v_x[:idx], v_y[:idx], v_z[:idx], \
+            #        r[:idx], theta[:idx], phi[:idx], v_r[:idx], v_theta[:idx], v_phi[:idx]
         else:
             return x, y, z, v_x, v_y, v_z, r, theta, phi, v_r, v_theta, v_phi
+
+    def get_midplane_ring(self, coord_type='Cartesian', r=None, \
+                           inc=None, pa=None):
+        """
+        Calculate the sky frame coordinates of a ring that lies in the disk
+        midplane. This is helpful for visualization of the streamer geometry.
+
+        Args:
+            coord_type (Optional[str]): Either 'Cartesian' or 'Angular'. If
+                'Cartesian', the returned coordinates will be in the Cartesian
+                sky frame. If 'Angular', the returned coordinates will be in the
+                angular sky frame. Defaults to Cartesian.
+            r (Optional[float]): The radius of the ring [au], in disk frame
+                coordinates. If not provided, the radius will be the initial
+                radius of the streamline, ``r0``.
+            inc (Optional[float]): The inclination of the ring [deg]. Defaults
+                to that of the streamline, ``inc``.
+            pa (Optional[float]): The position angle of the ring [deg]. Defaults
+                to that of the streamline, ``pa``.
+
+        Returns:
+            x_sky (1D array): x-coordinates of the ring (Cartesian sky frame).
+            y_sky (1D array): y-coordinates of the ring (Cartesian sky frame).
+            RA (1D array): x-coordinates of the ring (angular sky frame).
+            Dec (1D array): y-coordinates of the ring (angular sky frame).
+        """
+        r = self.r0 if r is None else r
+        inc = self.inc if inc is None else inc
+        pa = self.pa if pa is None else pa
+
+        r_ring    = np.zeros(10000) + r.value
+        t_ring    = np.linspace(0, 2*np.pi, r_ring.size)
+        x_ring    = r_ring * np.sin(t_ring) * u.au
+        y_ring    = r_ring * np.cos(t_ring) * u.au
+        z_ring    = np.zeros(r_ring.size)   * u.au # Lies in the midplane
+
+        (x_sky, z_sky, y_sky) \
+        = streamline.rotate_xyz(x_ring, y_ring, z_ring, inc=inc, pa=pa)
+
+        if coord_type=='Cartesian':
+            return x_sky, y_sky
+        elif coord_type=='Angular':
+            RA     = (-x_sky.value / self.dist.value) *u.arcsec
+            Dec    =  (y_sky.value / self.dist.value) *u.arcsec
+            return RA, Dec
+        else:
+            print("Supported options for ``coord_type`` are 'Cartesian' or 'Angular'.")
+
+
 
     ######################### Plotting functions #########################
 
