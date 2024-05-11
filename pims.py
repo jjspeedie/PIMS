@@ -1029,3 +1029,46 @@ class streamline(object):
         plt.tight_layout()
 
         return #ax
+
+    def plot_disk_axes_sky(self, ax, coord_type='Cartesian', rmax=2., pa=0., inc=0.,
+        color='lightgrey', lw=1.2, linestyle='dashed', alpha=1.0, zorder=1):
+        """
+        Plot the major and minor axes of the disk, projected on the sky. Can be
+        either in the Cartesian sky frame (``x_sky``, ``y_sky``) or Angular
+        sky frame (``RA``, ``Dec``).
+
+        Args:
+            ax (matplotib axis instance): Axis to plot the disk axis lines.
+            coord_type (Optional[str]): Either 'Cartesian' or 'Angular'. If
+                'Cartesian', the returned coordinates will be in the Cartesian
+                sky frame. If 'Angular', the returned coordinates will be in the
+                angular sky frame. Defaults to Cartesian.
+            rmax ([float]): Disk-frame radius to end the disk axis lines. Must
+                be in [au] (but does not need astropy units attached.)
+            inc ([float]): Inclination of the disk in [degrees].
+            pa ([float]): Position angle of the disk in [degrees],
+                measured east-of-north towards the redshifted major axis.
+        """
+
+        major_axis_diskframe_x = ([-rmax, rmax])
+        major_axis_diskframe_y = ([0, 0])
+        minor_axis_diskframe_x = ([0, 0])
+        minor_axis_diskframe_y = ([-rmax, rmax])
+
+        major_axis_skyframe_x, _, major_axis_skyframe_y = \
+        streamline.rotate_xyz(major_axis_diskframe_x, major_axis_diskframe_y, ([0,0]), inc=inc, pa=pa)
+        minor_axis_skyframe_x, _, minor_axis_skyframe_y = \
+        streamline.rotate_xyz(minor_axis_diskframe_x, minor_axis_diskframe_y, ([0,0]), inc=inc, pa=pa)
+
+        if coord_type=='Cartesian':
+            ax.plot(major_axis_skyframe_x, major_axis_skyframe_y, color=color, lw=lw, linestyle=linestyle, alpha=alpha, zorder=zorder)
+            ax.plot(minor_axis_skyframe_x, minor_axis_skyframe_y, color=color, lw=lw, linestyle=linestyle, alpha=alpha, zorder=zorder)
+        elif coord_type=='Angular':
+            major_axis_skyframe_RA     = (-major_axis_skyframe_x / self.dist.value)
+            major_axis_skyframe_Dec    =  (major_axis_skyframe_y / self.dist.value)
+            minor_axis_skyframe_RA     = (-minor_axis_skyframe_x / self.dist.value)
+            minor_axis_skyframe_Dec    =  (minor_axis_skyframe_y / self.dist.value)
+            ax.plot(major_axis_skyframe_RA, major_axis_skyframe_Dec, color=color, lw=lw, linestyle=linestyle, alpha=alpha, zorder=zorder)
+            ax.plot(minor_axis_skyframe_RA, minor_axis_skyframe_Dec, color=color, lw=lw, linestyle=linestyle, alpha=alpha, zorder=zorder)
+        else:
+            print("Supported options for ``coord_type`` are 'Cartesian' or 'Angular'.")
