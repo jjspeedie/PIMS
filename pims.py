@@ -548,8 +548,10 @@ class streamline(object):
         Returns:
             x_sky (1D array): x-coordinates of the ring (Cartesian sky frame).
             y_sky (1D array): y-coordinates of the ring (Cartesian sky frame).
+            z_sky (1D array): z-coordinates of the ring (Cartesian sky frame).
             RA (1D array): x-coordinates of the ring (angular sky frame).
             Dec (1D array): y-coordinates of the ring (angular sky frame).
+            LOS (1D array): z-coordinates of the ring (angular sky frame).
         """
         r = self.r0 if r is None else r
         inc = self.inc if inc is None else inc
@@ -565,11 +567,12 @@ class streamline(object):
         = streamline.rotate_xyz(x_ring, y_ring, z_ring, inc=inc, pa=pa)
 
         if coord_type=='Cartesian':
-            return x_sky, y_sky
+            return x_sky, y_sky, z_sky
         elif coord_type=='Angular':
             RA     = (-x_sky.value / self.dist.value) *u.arcsec
             Dec    =  (y_sky.value / self.dist.value) *u.arcsec
-            return RA, Dec
+            LOS    =  (z_sky.value / self.dist.value) *u.arcsec
+            return RA, Dec, LOS
         else:
             print("Supported options for ``coord_type`` are 'Cartesian' or 'Angular'.")
 
