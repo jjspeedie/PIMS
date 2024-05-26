@@ -431,7 +431,7 @@ class streamline(object):
         return v_r_all * v_k0, v_theta_all * v_k0, v_phi_all * v_k0
 
     @staticmethod
-    def rotate_xyz(x, y, z, inc=30 * u.deg, pa=30 * u.deg):
+    def rotate_xyz(x, y, z, inc=30 * u.deg, pa=30 * u.deg, meshgrids=False):
         """
         Rotate on inclination and PA
         x-axis and y-axis are on the plane on the sky,
@@ -453,6 +453,11 @@ class streamline(object):
 
         """
         xyz = np.column_stack((x, y, z))
+
+        # Patch to allow meshgrids to be fed in
+        if meshgrids==True:
+            xyz = np.column_stack((x.ravel(), y.ravel(), z.ravel()))
+
         rot_inc = np.array([[1, 0, 0],
                             [0, np.cos(inc), np.sin(inc)],
                             [0, -np.sin(inc), np.cos(inc)]])
@@ -573,6 +578,74 @@ class streamline(object):
             Dec    =  (y_sky.value / self.dist.value) *u.arcsec
             LOS    =  (z_sky.value / self.dist.value) *u.arcsec
             return RA, Dec, LOS
+        else:
+            print("Supported options for ``coord_type`` are 'Cartesian' or 'Angular'.")
+
+    def plot_3D_disk_skyframe(self, coord_type='Cartesian', r=None, \
+                           inc=None, pa=None):
+        """
+        Calculate the 3D sky frame coordinates of a flat disk. When plotted
+        alongside a streamer's (x_sky, y_sky, z_sky) or (RA, Dec, LOS), one can
+        view in 3D how the streamer's physical location compares with the disk
+        (how high above the disk it is, where it lands, etc). If ``r``, ``inc``,
+        or ``pa`` are not specified, the disk is inherited as the streamline's
+        disk.
+
+        Args:
+            coord_type (Optional[str]): Either 'Cartesian' or 'Angular'. If
+                'Cartesian', the returned coordinates will be in the Cartesian
+                sky frame. If 'Angular', the returned coordinates will be in the
+                angular sky frame. Defaults to Cartesian.
+            r (Optional[float]): The outer radius of the disk [au], in disk frame
+                coordinates. If not provided, the radius will be the initial
+                radius of the streamline, ``r0``.
+            inc (Optional[float]): The inclination of the ring [deg]. Defaults
+                to that of the streamline, ``inc``.
+            pa (Optional[float]): The position angle of the ring [deg]. Defaults
+                to that of the streamline, ``pa``.
+
+        Returns:
+            x_sky (2D array): x-coordinates of the ring (Cartesian sky frame).
+            y_sky (2D array): y-coordinates of the ring (Cartesian sky frame).
+            z_sky (2D array): z-coordinates of the ring (Cartesian sky frame).
+            RA (2D array): x-coordinates of the ring (angular sky frame).
+            Dec (2D array): y-coordinates of the ring (angular sky frame).
+            LOS (2D array): z-coordinates of the ring (angular sky frame).
+        """
+
+        print('... Entering plot_3D_disk_skyframe')
+
+        r = self.r0 if r is None else r
+        inc = self.inc if inc is None else inc
+        pa = self.pa if pa is None else pa
+
+        # Generate mesh grid representing the surface of the disk
+        r_disk    = np.linspace(0, r.value, 100)
+        t_disk    = np.linspace(0, 2*np.pi, r_disk.size)
+        t_disk, r_disk = np.meshgrid(t_disk, r_disk)
+
+
+        x_disk    = r_disk * np.sin(t_disk) * u.au
+        y_disk    = r_disk * np.cos(t_disk) * u.au
+        z_disk    = np.zeros_like(x_disk)   #* u.au # Lies in the midplane
+
+
+        (x_sky_flattened, z_sky_flattened, y_sky_flattened) \
+        = streamline.rotate_xyz(x_disk, y_disk, z_disk, inc=inc, pa=pa, meshgrids=True)
+
+        # Reshape to the original grid shape
+        x_sky = x_sky_flattened.reshape(x_disk.shape)
+        y_sky = y_sky_flattened.reshape(y_disk.shape)
+        z_sky = z_sky_flattened.reshape(z_disk.shape)
+
+        if coord_type=='Cartesian':
+            return (x_sky, y_sky, z_sky)
+        elif coord_type=='Angular':
+            print('... Returning angular: ')
+            RA     = (-x_sky.value / self.dist.value) *u.arcsec
+            Dec    =  (y_sky.value / self.dist.value) *u.arcsec
+            LOS    =  (z_sky.value / self.dist.value) *u.arcsec
+            return (RA, Dec, LOS)
         else:
             print("Supported options for ``coord_type`` are 'Cartesian' or 'Angular'.")
 
@@ -878,7 +951,7 @@ class streamline(object):
 
     def plot_xyz_sky(self, ax=None, elev=30, azim=45):
         """
-        Plot the streamer in xyz_sky coordinates (the sky frame).
+        Plot the streamer in xyz_sky coordinates (the Cartesian sky frame).
         """
 
         from matplotlib.patches import Circle
@@ -1056,9 +1129,9 @@ class streamline(object):
         minor_axis_diskframe_y = ([-rmax, rmax])
 
         major_axis_skyframe_x, _, major_axis_skyframe_y = \
-        streamline.rotate_xyz(major_axis_diskframe_x, major_axis_diskframe_y, ([0,0]), inc=inc, pa=pa)
+        streamline.rotate_xyz(major_axis_diskframe_x, major_axis_diskframe_y, ([0,0]), inc=inc*u.deg, pa=pa*u.deg)
         minor_axis_skyframe_x, _, minor_axis_skyframe_y = \
-        streamline.rotate_xyz(minor_axis_diskframe_x, minor_axis_diskframe_y, ([0,0]), inc=inc, pa=pa)
+        streamline.rotate_xyz(minor_axis_diskframe_x, minor_axis_diskframe_y, ([0,0]), inc=inc*u.deg, pa=pa*u.deg)
 
         if coord_type=='Cartesian':
             ax.plot(major_axis_skyframe_x, major_axis_skyframe_y, color=color, lw=lw, linestyle=linestyle, alpha=alpha, zorder=zorder)
