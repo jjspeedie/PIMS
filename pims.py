@@ -19,75 +19,88 @@ class streamline(object):
     Base class containing all the properties of a streamline.
 
     Args:
-        mass (float):     [Msun]
-        r0 (float):        [au]
-        omega (float):     [Hz]
-        theta0 (float):    [deg]
-        phi0 (float):      [deg]
-        v_r0 (float):      [km/s]
-        rmin (Optional[float]):   [au]
-        delta_r (Optional[float]):   [au]
-
-        inc (Optional[float]):      [deg]
-        pa (Optional[float]):       [deg]
-
-        dist (Optional[float]):     [pc]
-        v_sys (Optional[float]):    [km/s]
+        mass (float): Central mass at the origin, in [Msun].
+        r0 (float): Spherical radius of the rigidly-rotating sphere, in [au]. 
+            This is the initial radius of the streamline.
+        omega (float): Angular frequency of the rigidly-rotating sphere [Hz].
+        theta0 (float): Initial polar angle of the streamline, in [deg]. The
+            polar angle is measured from the positive `z` axis, where `theta0=90`
+            would lie directly on the sphere's equatorial plane.
+        phi0 (float): Initial azimuthal angle of the streamline, in [deg], 
+            measured from the positive `x` axis toward the positive `y` axis.
+        v_r0 (float): Initial radial velocity of the streamline, in [km/s].
+        rmin (Optional[float]): Radius to truncate the streamline, in [au].
+        delta_r (Optional[float]): Radial increment where points along the 
+            streamline are calculated, in [au].
+        inc (Optional[float]): Inclination of the sphere's equatorial plane, 
+            in [deg]. Inclination is defined as rotation about the native 
+            x-axis. Negative inclination corresponds to viewing the sphere's 
+            midplane "from below", i.e., up from along the negative `z` axis.
+        pa (Optional[float]):  Position angle of the ascending node, in [deg].
+            PA is defined as rotation about the native `y` axis, where `pa=0` 
+            aligns minor axis of the "disk" with north.
+        dist (Optional[float]): Distance to the star, in [pc].
+        v_sys (Optional[float]): Systemic velocity of the star, in [km/s].
 
     Returns:
-        A `streamline` instance, with the following attributes:
-            r_cent (float): Centrifugal radius of the streamline, in [au].
-            x (1D array): Cartesian x-position along the streamline, in [au].
-            y (1D array): Cartesian y-position along the streamline, in [au].
-            z (1D array): Cartesian z-position along the streamline, in [au].
-            v_x (1D array): Cartesian x-velocity along the streamline, in [km/s].
-            v_y (1D array): Cartesian y-velocity along the streamline, in [km/s].
-            v_z (1D array): Cartesian z-velocity along the streamline, in [km/s].
-            r (1D array): Spherical r-position along the streamline, in [au]. In
-                other words, (x**2 + y**2 + z**2)**0.5.
-            theta (1D array): Spherical theta-position along the streamline, in [rad].
-            phi (1D array): Spherical phi-position along the streamline, in [deg].
-            v_r (1D array): Spherical r-velocity along the streamline, in [km/s].
-            v_theta (1D array): Spherical theta-velocity along the streamline, in [km/s].
-            v_phi (1D array): Spherical phi-velocity along the streamline, in [km/s].
-        If the disk inclination `inc` and position angle `pa` are provided:
-            x_sky (1D array): Cartesian x-position along the streamline projected
-                onto the sky, in [au]. Increasing x is westward.
-            y_sky (1D array): Cartesian y-position along the streamline projected
-                onto the sky, in [au]. Increasing y is northward.
-            z_sky (1D array): Cartesian z-position along the streamline projected
-                onto the sky, in [au]. Increasing z is into the plane of the sky,
-                away from the observer. ***CHECK THIS, SEEMS OPPOSITE
-            r_sky (1D array): Cartesian distance from the star along the streamline
-                projected onto the sky, in [au]. Hypotenuse of `x_sky` and `y_sky`.
-            v_x_sky (1D array): Cartesian x-velocity along the streamline projected
-                onto the sky, in [au]. Increasing x is westward.
-            v_y_sky (1D array): Cartesian y-velocity along the streamline projected
-                onto the sky, in [au]. Increasing y is northward.
-            v_z_sky (1D array): Cartesian z-velocity along the streamline projected
-                onto the sky, in [au]. Increasing z is into the plane of the sky,
-                away from the observer.
-        If the distance to the system `dist` and the systemic velocity `v_sys` are ALSO provided:
-            RA (1D array): Angular RA-position along the streamline projected
-                onto the sky, in [arcsec]. Increasing RA is eastward.
-            Dec (1D array): Angular Dec-position along the streamline projected
-                onto the sky, in [arcsec]. Increasing Dec is northward.
-            LOS (1D array): LOS-position along the streamline projected
-                onto the sky, in [arcsec]. Increasing LOS is into the plane of the sky,
-                away from the observer.
-            r_proj (1D array): Angular distance from the star along the streamline
-                projected onto the sky, in [arcsec]. Hypotenuse of `RA` and `Dec`.
-            v_RA (1D array): Angular RA-velocity along the streamline projected
-                onto the sky, in [km/s]. Increasing RA is eastward.
-            v_Dec (1D array): Angular Dec-velocity along the streamline projected
-                onto the sky, in [km/s]. Increasing Dec is northward.
-            v_LOS (1D array): LOS-velocity along the streamline projected
-                onto the sky, in [km/s]. Increasing LOS is into the plane of the sky,
-                away from the observer.
-        In disk frame coordinates, the central `mass` [i.e. the star] is at
-            (x,y,z)=(0,0,0).
-        In sky frame coordinates, the central `mass` [i.e. the star] is at
-            (x_sky,y_sky,z_sky)=(0,0,0) and (RA,Dec,LOS)=(0,0,0).
+        A `streamline` instance. 
+    
+    Each streamline instance has the following attributes:
+        r_cent (float): Centrifugal radius of the streamline, in [au].
+        x (1D array): Cartesian x-position along the streamline, in [au].
+        y (1D array): Cartesian y-position along the streamline, in [au].
+        z (1D array): Cartesian z-position along the streamline, in [au].
+        v_x (1D array): Cartesian x-velocity along the streamline, in [km/s].
+        v_y (1D array): Cartesian y-velocity along the streamline, in [km/s].
+        v_z (1D array): Cartesian z-velocity along the streamline, in [km/s].
+        r (1D array): Spherical r-position along the streamline, in [au]. In
+            other words, (x**2 + y**2 + z**2)**0.5.
+        theta (1D array): Spherical theta-position along the streamline, in [rad].
+        phi (1D array): Spherical phi-position along the streamline, in [deg].
+        v_r (1D array): Spherical r-velocity along the streamline, in [km/s].
+        v_theta (1D array): Spherical theta-velocity along the streamline, in [km/s].
+        v_phi (1D array): Spherical phi-velocity along the streamline, in [km/s].
+    
+    If the disk inclination `inc` and position angle `pa` are provided:
+        x_sky (1D array): Cartesian x-position along the streamline projected
+            onto the sky, in [au]. Increasing x is westward.
+        y_sky (1D array): Cartesian y-position along the streamline projected
+            onto the sky, in [au]. Increasing y is northward.
+        z_sky (1D array): Cartesian z-position along the streamline projected
+            onto the sky, in [au]. Increasing z is into the plane of the sky,
+            away from the observer. ***CHECK THIS, SEEMS OPPOSITE
+        r_sky (1D array): Cartesian distance from the star along the streamline
+            projected onto the sky, in [au]. Hypotenuse of `x_sky` and `y_sky`.
+        v_x_sky (1D array): Cartesian x-velocity along the streamline projected
+            onto the sky, in [au]. Increasing x is westward.
+        v_y_sky (1D array): Cartesian y-velocity along the streamline projected
+            onto the sky, in [au]. Increasing y is northward.
+        v_z_sky (1D array): Cartesian z-velocity along the streamline projected
+            onto the sky, in [au]. Increasing z is into the plane of the sky,
+            away from the observer.
+    
+    If the distance to the system `dist` and the systemic velocity `v_sys` are ALSO provided:
+        RA (1D array): Angular RA-position along the streamline projected
+            onto the sky, in [arcsec]. Increasing RA is eastward.
+        Dec (1D array): Angular Dec-position along the streamline projected
+            onto the sky, in [arcsec]. Increasing Dec is northward.
+        LOS (1D array): LOS-position along the streamline projected
+            onto the sky, in [arcsec]. Increasing LOS is into the plane of the sky,
+            away from the observer.
+        r_proj (1D array): Angular distance from the star along the streamline
+            projected onto the sky, in [arcsec]. Hypotenuse of `RA` and `Dec`.
+        v_RA (1D array): Angular RA-velocity along the streamline projected
+            onto the sky, in [km/s]. Increasing RA is eastward.
+        v_Dec (1D array): Angular Dec-velocity along the streamline projected
+            onto the sky, in [km/s]. Increasing Dec is northward.
+        v_LOS (1D array): LOS-velocity along the streamline projected
+            onto the sky, in [km/s]. Increasing LOS is into the plane of the sky,
+            away from the observer.
+    
+    In disk frame coordinates, the central `mass` [i.e. the star] is at
+        (x,y,z)=(0,0,0).
+    In sky frame coordinates, the central `mass` [i.e. the star] is at
+        (x_sky,y_sky,z_sky)=(0,0,0) and (RA,Dec,LOS)=(0,0,0).
     """
 
     def __init__(self, mass=0.5, r0=1e4, omega=1e-14, theta0=30., phi0=0.,
